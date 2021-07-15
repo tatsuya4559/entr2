@@ -7,8 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"github.com/fsnotify/fsnotify"
 )
 
 func main() {
@@ -19,40 +17,26 @@ func main() {
 		log.Fatal("no file matched to input pattern")
 	}
 
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
+	watcher := NewWatcher()
 
 	done := make(chan bool)
 	go func() {
 		for {
 			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				log.Println("modified file:", event.Name)
+			case filename := <-watcher.Events:
+				log.Println("modified file:", filename)
 				log.Printf("%+v", commands)
 				if err := execCommands(commands); err != nil {
 					log.Fatal(err)
 				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Println("error:", err)
 			}
 		}
 	}()
 
 	for _, file := range files {
-		err := watcher.Add(file)
-		if err != nil {
-			log.Fatal(err)
-		}
+		watcher.Add(file)
 	}
+	watcher.Start()
 
 	// prevent terminating
 	<-done
