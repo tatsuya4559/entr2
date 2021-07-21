@@ -73,10 +73,7 @@ func (w *Watcher) hasChanged(filename string) bool {
 	newHash := hashFile(filename)
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	if w.hashes[filename] == newHash {
-		return false
-	}
-	return true
+	return w.hashes[filename] != newHash
 }
 
 func hashFile(filename string) [16]byte {
